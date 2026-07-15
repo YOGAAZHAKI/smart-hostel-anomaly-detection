@@ -514,7 +514,7 @@ class CrimeDetectorInference:
     def __init__(self, model_path):
         """Load trained model for inference."""
         
-        print(f"\n📥 Loading model from {model_path}...")
+        print(f"\n[INFO] Loading model from {model_path}...")
         
         checkpoint = torch.load(model_path, map_location='cpu')
         
@@ -534,7 +534,7 @@ class CrimeDetectorInference:
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.model.eval()
         
-        print(f"✅ Model loaded successfully")
+        print(f"Success: Model loaded successfully")
         print(f"   Type: {self.model_type.upper()}")
         print(f"   Accuracy: {checkpoint.get('accuracy', 'N/A'):.2f}%")
         print(f"   Device: {self.device}")
@@ -542,13 +542,13 @@ class CrimeDetectorInference:
         # Silently load CLIP for zero-shot accuracy during live demo
         try:
             from transformers import CLIPProcessor, CLIPModel
-            print("🚀 Initializing CLIP engine...")
+            print("Initializing CLIP engine...")
             self.clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(self.device)
             self.clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
             self.use_clip = True
-            print("✅ CLIP engine initialized successfully")
+            print("CLIP engine initialized successfully")
         except Exception as e:
-            print(f"⚠️ Could not load CLIP ({e}), using default model.")
+            print(f"Warning: Could not load CLIP ({e}), using default model.")
             self.use_clip = False
     
     def predict_image(self, image_input):
@@ -597,7 +597,7 @@ class CrimeDetectorInference:
                     'probabilities': probabilities
                 }
             except Exception as e:
-                print(f"⚠️ CLIP prediction failed ({e}), falling back to ResNet.")
+                print(f"Warning: CLIP prediction failed ({e}), falling back to ResNet.")
         
         # Transform
         img_tensor = self.transform(image).unsqueeze(0).to(self.device)
