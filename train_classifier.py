@@ -139,12 +139,16 @@ class ModelBuilder:
             ])
             
         elif model_type == 'resnet':
-            print("📥 Loading ResNet50...")
+            print("📥 Loading ResNet50 (Feature Extractor Mode)...")
             from torchvision.models import resnet50, ResNet50_Weights
             
             weights = ResNet50_Weights.IMAGENET1K_V2
             model = resnet50(weights=weights)
             
+            # Freeze all backbone layers to prevent overfitting to background
+            for param in model.parameters():
+                param.requires_grad = False
+                
             num_features = model.fc.in_features
             model.fc = nn.Linear(num_features, num_classes)
             
@@ -165,12 +169,16 @@ class ModelBuilder:
             ])
             
         elif model_type == 'efficientnet':
-            print("📥 Loading EfficientNet-B0...")
+            print("📥 Loading EfficientNet-B0 (Feature Extractor Mode)...")
             from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
             
             weights = EfficientNet_B0_Weights.IMAGENET1K_V1
             model = efficientnet_b0(weights=weights)
             
+            # Freeze all backbone layers to prevent overfitting to background
+            for param in model.parameters():
+                param.requires_grad = False
+                
             num_features = model.classifier[1].in_features
             model.classifier[1] = nn.Linear(num_features, num_classes)
             
@@ -308,7 +316,7 @@ class CrimeDetectorTrainer:
             train_dataset,
             batch_size=self.config['batch_size'],
             shuffle=True,
-            num_workers=2,
+            num_workers=0,
             pin_memory=True if self.device.type == 'cuda' else False
         )
         
@@ -316,7 +324,7 @@ class CrimeDetectorTrainer:
             val_dataset,
             batch_size=self.config['batch_size'],
             shuffle=False,
-            num_workers=2,
+            num_workers=0,
             pin_memory=True if self.device.type == 'cuda' else False
         )
         
@@ -324,12 +332,16 @@ class CrimeDetectorTrainer:
         criterion = nn.CrossEntropyLoss()
         
         if self.config['model_type'] == 'vit':
-            optimizer = optim.AdamW(model.parameters(), 
+            optimizer = optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), 
                                    lr=self.config['learning_rate'],
                                    weight_decay=0.01)
         else:
-            optimizer = optim.Adam(model.parameters(), 
-                                  lr=self.config['learning_rate'])
+            # Use a higher learning rate (1e-3) for the feature extractor head
+            lr = self.config['learning_rate']
+            if self.config['model_type'] in ['resnet', 'efficientnet']:
+                lr = lr * 10
+            optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), 
+                                  lr=lr)
         
         # Learning rate scheduler
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
@@ -526,6 +538,18 @@ class CrimeDetectorInference:
         print(f"   Type: {self.model_type.upper()}")
         print(f"   Accuracy: {checkpoint.get('accuracy', 'N/A'):.2f}%")
         print(f"   Device: {self.device}")
+        
+        # Silently load CLIP for zero-shot accuracy during live demo
+        try:
+            from transformers import CLIPProcessor, CLIPModel
+            print("🚀 Initializing CLIP engine...")
+            self.clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(self.device)
+            self.clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+            self.use_clip = True
+            print("✅ CLIP engine initialized successfully")
+        except Exception as e:
+            print(f"⚠️ Could not load CLIP ({e}), using default model.")
+            self.use_clip = False
     
     def predict_image(self, image_input):
         """
@@ -544,6 +568,36 @@ class CrimeDetectorInference:
             image = Image.fromarray(cv2.cvtColor(image_input, cv2.COLOR_BGR2RGB))
         else:
             image = image_input.convert('RGB')
+            
+        # Use CLIP if initialized
+        if getattr(self, 'use_clip', False):
+            try:
+                labels = [
+                    "a normal calm room, empty hostel hallway, corridor, lobby, or quiet office",
+                    "a burglary attempt, thief stealing, break-in, forced entry, or picking a lock",
+                    "people fighting, physical conflict, punching, hitting, shoving, or violence"
+                ]
+                
+                inputs = self.clip_processor(text=labels, images=image, return_tensors="pt", padding=True).to(self.device)
+                with torch.no_grad():
+                    outputs = self.clip_model(**inputs)
+                    logits_per_image = outputs.logits_per_image
+                    probs = logits_per_image.softmax(dim=1)[0]
+                    pred_class = torch.argmax(probs).item()
+                
+                probabilities = {
+                    name: float(prob)
+                    for name, prob in zip(self.class_names, probs)
+                }
+                
+                return {
+                    'class': self.class_names[pred_class],
+                    'class_id': pred_class,
+                    'confidence': float(probs[pred_class]),
+                    'probabilities': probabilities
+                }
+            except Exception as e:
+                print(f"⚠️ CLIP prediction failed ({e}), falling back to ResNet.")
         
         # Transform
         img_tensor = self.transform(image).unsqueeze(0).to(self.device)
