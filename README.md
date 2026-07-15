@@ -1,11 +1,13 @@
 # 🚨 AI-Based Smart Hostel Anomaly Detection System
 
 [![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/)
-[![Framework](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit)](https://streamlit.io/)
+[![Framework](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit)](https://smart-hostel-anomaly-detection.streamlit.app/)
 [![Deep Learning](https://img.shields.io/badge/PyTorch-Model-EE4C2C?logo=pytorch)](https://pytorch.org/)
 [![Computer Vision](https://img.shields.io/badge/OpenCV-Surveillance-5C3EE8?logo=opencv)](https://opencv.org/)
 
 An intelligent computer vision surveillance system designed to identify abnormal activities (Fighting and Burglary) within hostel environments using deep learning and zero-shot foundation models. 
+
+🌐 **Live Web Application:** [smart-hostel-anomaly-detection.streamlit.app](https://smart-hostel-anomaly-detection.streamlit.app/)
 
 ---
 
