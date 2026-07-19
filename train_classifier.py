@@ -139,7 +139,7 @@ class ModelBuilder:
             ])
             
         elif model_type == 'resnet':
-            print("📥 Loading ResNet50 (Feature Extractor Mode)...")
+            print("[INFO] Loading ResNet50 (Feature Extractor Mode)...")
             from torchvision.models import resnet50, ResNet50_Weights
             
             weights = ResNet50_Weights.IMAGENET1K_V2
@@ -169,7 +169,7 @@ class ModelBuilder:
             ])
             
         elif model_type == 'efficientnet':
-            print("📥 Loading EfficientNet-B0 (Feature Extractor Mode)...")
+            print("[INFO] Loading EfficientNet-B0 (Feature Extractor Mode)...")
             from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
             
             weights = EfficientNet_B0_Weights.IMAGENET1K_V1
@@ -201,7 +201,7 @@ class ModelBuilder:
             raise ValueError(f"Unknown model type: {model_type}")
         
         model = model.to(device)
-        print(f"✅ {model_type.upper()} model loaded successfully")
+        print(f"Success: {model_type.upper()} model loaded successfully")
         
         return model, train_transform, val_transform
 

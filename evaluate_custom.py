@@ -41,15 +41,15 @@ class AnomalyEvaluator:
         self.last_email_time = 0
         self.email_cooldown = 30.0 # Minimum seconds between emails
         
-        print(f"✅ Anomaly storage directory: {output_dir}")
-        print(f"⚙️  Smart Save: Enabled (Interval={self.min_save_interval}s)")
-        print(f"📧 Email Alerts: Enabled (Cooldown={self.email_cooldown}s) -> {self.email_user}")
+        print(f"[INFO] Anomaly storage directory: {output_dir}")
+        print(f"[INFO] Smart Save: Enabled (Interval={self.min_save_interval}s)")
+        print(f"[INFO] Email Alerts: Enabled (Cooldown={self.email_cooldown}s) -> {self.email_user}")
 
     def send_email_async(self, image_path, label):
         def _send():
             try:
                 msg = EmailMessage()
-                msg['Subject'] = f'⚠️ Anomaly Detected: {label}'
+                msg['Subject'] = f'Anomaly Detected: {label}'
                 msg['From'] = self.email_user
                 msg['To'] = self.email_user # Sending to self
                 msg.set_content(f"Suspicious activity ({label}) detected at {time.strftime('%Y-%m-%d %H:%M:%S')}.\n\nSee attached image.")
@@ -60,14 +60,14 @@ class AnomalyEvaluator:
 
                 msg.add_attachment(file_data, maintype='image', subtype='jpeg', filename=file_name)
 
-                print("⏳ Sending alert email...")
+                print("[SMTP] Sending alert email...")
                 with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
                     smtp.login(self.email_user, self.email_pass)
                     smtp.send_message(msg)
                 
-                print(f"✅ Alert Mail Sent to {self.email_user}!")
+                print(f"[SMTP] Alert Mail Sent to {self.email_user}!")
             except Exception as e:
-                print(f"❌ Failed to send email: {e}")
+                print(f"[ERROR] Failed to send email: {e}")
 
         # Start in separate thread to not block video
         threading.Thread(target=_send, daemon=True).start()
@@ -100,7 +100,7 @@ class AnomalyEvaluator:
         filename = f"{self.output_dir}/{timestamp}{suffix}_{label}_{confidence:.2f}.jpg"
         
         cv2.imwrite(filename, frame)
-        print(f"🚨 Anomaly Saved: {os.path.basename(filename)} (Diff: {diff_score:.1f})")
+        print(f"[SAVED] Anomaly Saved: {os.path.basename(filename)} (Diff: {diff_score:.1f})")
         
         self.last_saved_frame = frame.copy()
         self.last_save_time = current_time
