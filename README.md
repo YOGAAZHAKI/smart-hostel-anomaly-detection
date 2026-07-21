@@ -129,6 +129,8 @@ python train_classifier.py --mode train --model resnet --dataset output_demo --e
 * **Frozen Convolutional Backbone:** We keep the feature representation weights of ResNet50 frozen to prevent background texture overfitting.
 * **CLIP Zero-Shot Integration:** During inference, `train_classifier.py` spins up a CLIP assistant that parses visual features against text descriptions to maximize robustness on raw, high-res web images.
 
+## 🌐 Live Links
+Link:https://smart-hostel-anomaly-detection.streamlit.app/
 ---
 
 ## 👩‍💻 Developer Contributions
